@@ -691,7 +691,7 @@ for A in ${ENVWORDS} ; do
 	SEDFLAGS="${SEDFLAGS}s,@${A}@,${VAR},g;"
 done
 SEDFLAGS="${SEDFLAGS}'"
-for A in ./config-user.mk libr/include/r_userconf.h pkgcfg/r_io.pc pkgcfg/r_magic.pc pkgcfg/r_asm.pc pkgcfg/r_bin.pc pkgcfg/r_anal.pc pkgcfg/r_hash.pc pkgcfg/r_cons.pc pkgcfg/r_core.pc pkgcfg/r_lang.pc pkgcfg/r_socket.pc pkgcfg/r_debug.pc pkgcfg/r_reg.pc pkgcfg/r_config.pc pkgcfg/r_flag.pc pkgcfg/r_syscall.pc pkgcfg/r_util.pc pkgcfg/r_search.pc pkgcfg/r_bp.pc pkgcfg/r_parse.pc pkgcfg/r_fs.pc pkgcfg/r_egg.pc pkgcfg/r_crypto.pc  ; do # SUBDIRS
+for A in ./config-user.mk libr/include/r_userconf.h pkgcfg/r_io.pc pkgcfg/r_arch.pc pkgcfg/r_magic.pc pkgcfg/r_asm.pc pkgcfg/r_bin.pc pkgcfg/r_anal.pc pkgcfg/r_hash.pc pkgcfg/r_cons.pc pkgcfg/r_core.pc pkgcfg/r_lang.pc pkgcfg/r_socket.pc pkgcfg/r_debug.pc pkgcfg/r_reg.pc pkgcfg/r_config.pc pkgcfg/r_flag.pc pkgcfg/r_syscall.pc pkgcfg/r_util.pc pkgcfg/r_search.pc pkgcfg/r_bp.pc pkgcfg/r_parse.pc pkgcfg/r_fs.pc pkgcfg/r_egg.pc pkgcfg/r_crypto.pc  ; do # SUBDIRS
 if [ -f "${VPATH}/${A}.acr" ]; then
   SD_TARGET=${A}
  else

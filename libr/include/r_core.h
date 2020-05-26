@@ -239,6 +239,7 @@ typedef struct r_core_tasks_t {
 
 typedef struct r_core_t {
 	RBin *bin;
+	RArch *arch;
 	RConfig *config;
 	ut64 offset; // current seek
 	ut64 prompt_offset; // temporarily set to offset to have $$ in expressions always stay the same during temp seeks
@@ -329,7 +330,7 @@ typedef struct r_core_t {
 	bool log_events; // core.c:cb_event_handler : log actions from events if cfg.log.events is set
 	RList *ropchain;
 	bool use_tree_sitter_r2cmd;
-
+	RArchSessionPool *arch_pool;
 	RMainCallback r_main_radare2;
 	// int (*r_main_radare2)(int argc, char **argv);
 	int (*r_main_rafind2)(int argc, const char **argv);

@@ -133,7 +133,9 @@ R_API bool r_reg_set_profile_string(RReg *reg, const char *str) {
 	const char *p = str;
 
 	r_return_val_if_fail (reg && str, false);
-
+	if (!*str) {
+		return false;
+	}
 	// Same profile, no need to change
 	if (reg->reg_profile_str && !strcmp (reg->reg_profile_str, str)) {
 		return true;

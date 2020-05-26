@@ -2,9 +2,10 @@ Brainfuck support for r2
 ========================
 
 Plugins for brainfuck:
-  - `asm.bf` - brainfuck assembler and disassembler
+  - `bin.bf` - identify files containing braifuck code
+  - `arch.bf` - code analysis for brainfuck
   - `debug.bf` - debugger using bfvm
-  - `anal.bf` - code analysis for brainfuck
+  - `io.bfdbg` - brainfuck debugger
   - `bp.bf` - breakpoints support (experimental)
 
 To debug a brainfuck program:

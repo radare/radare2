@@ -95,7 +95,7 @@ typedef struct {
 typedef struct r_asm_t {
 	char *cpu;
 	int bits;
-	int big_endian;
+	bool big_endian;
 	int syntax;
 	ut64 pc;
 	void *user;
@@ -117,6 +117,10 @@ typedef struct r_asm_t {
 	HtPP *flags;
 	int seggrn;
 	bool pseudo;
+	// Assembler
+	RArchLazySession *lsa;
+	// Disassembler
+	RArchLazySession *lsd;
 } RAsm;
 
 typedef bool (*RAsmModifyCallback)(RAsm *a, ut8 *buf, int field, ut64 val);

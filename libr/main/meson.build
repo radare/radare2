@@ -19,6 +19,7 @@ r_main = library('r_main', r_main_sources,
   dependencies: [
     r_config_dep,
     r_cons_dep,
+    r_arch_dep,
     r_io_dep,
     r_util_dep,
     r_flag_dep,

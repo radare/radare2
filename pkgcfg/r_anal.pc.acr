@@ -6,6 +6,6 @@ includedir=${prefix}/include
 Name: r_anal
 Description: radare foundation libraries
 Version: @VERSION@
-Requires: r_util r_reg r_syscall r_search r_cons r_flag r_crypto
+Requires: r_util r_reg r_syscall r_search r_cons r_flag r_hash r_crypto r_parse r_arch
 Libs: -L${libdir} -lr_anal  
 Cflags: -I${includedir}/libr 

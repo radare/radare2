@@ -6,6 +6,6 @@ includedir=${prefix}/include
 Name: r_core
 Description: radare foundation libraries
 Version: @VERSION@
-Requires: r_config r_cons r_io r_util r_flag r_asm r_debug r_hash r_bin r_lang r_io r_anal r_parse r_bp r_egg r_reg r_search r_syscall r_socket r_fs r_magic r_crypto
-Libs: -L${libdir} -lr_core  @SSL_LDFLAGS@ @CAPSTONE_LDFLAGS@
-Cflags: -I${includedir}/libr @SSL_CFLAGS@ @CAPSTONE_CFLAGS@
+Requires: r_config r_cons r_io r_util r_flag r_asm r_arch r_debug r_hash r_bin r_lang r_io r_anal r_parse r_bp r_egg r_reg r_search r_syscall r_socket r_fs r_magic r_crypto
+Libs: -L${libdir} -lr_core  
+Cflags: -I${includedir}/libr 

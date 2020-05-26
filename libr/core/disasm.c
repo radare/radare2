@@ -964,7 +964,7 @@ static void __replaceImports(RDisasmState *ds) {
 	}
 }
 
-static char *get_op_ireg (void *user, ut64 addr) {
+static char *get_op_ireg(void *user, ut64 addr) {
 	RCore *core = (RCore *)user;
 	char *res = NULL;
 	RAnalOp *op = r_core_anal_op (core, addr, 0);

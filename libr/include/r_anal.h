@@ -9,6 +9,7 @@
 
 #include <r_types.h>
 #include <r_io.h>
+#include <r_arch.h>
 #include <r_reg.h>
 #include <r_list.h>
 #include <r_search.h>
@@ -680,6 +681,7 @@ typedef struct r_anal_t {
 	SetU *visited;
 	RStrConstPool constpool;
 	RList *leaddrs;
+	RArchLazySession *lsa;
 } RAnal;
 
 typedef enum r_anal_addr_hint_type_t {

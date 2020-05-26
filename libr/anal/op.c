@@ -86,12 +86,70 @@ static int defaultCycles(RAnalOp *op) {
 	}
 }
 
+static int mask_anal_to_arch (int m) {
+	int r = R_ARCH_OPTION_SIZE; // R_ANAL_OP_MASK_BASIC
+	r |= R_ARCH_OPTION_ANAL;
+	if (m & R_ANAL_OP_MASK_ESIL) {
+		r |= R_ARCH_OPTION_ESIL;
+	}
+	if (m & R_ANAL_OP_MASK_DISASM) {
+		r |= R_ARCH_OPTION_CODE;
+	}
+	return r;
+#if 0
+	R_ANAL_OP_MASK_VAL   = 2, // It fills RAnalop->dst/src info
+	R_ANAL_OP_MASK_HINT  = 4, // It calls r_anal_op_hint to override anal options
+	R_ANAL_OP_MASK_OPEX  = 8, // It fills RAnalop->opex info
+	R_ANAL_OP_MASK_ALL   = 1 | 2 | 4 | 8 | 16
+#endif
+}
+
 R_API int r_anal_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int len, RAnalOpMask mask) {
-	r_anal_op_init (op);
 	r_return_val_if_fail (anal && op && len > 0, -1);
+	r_anal_op_init (op);
 
 	int ret = R_MIN (2, len);
-	if (len > 0 && anal->cur && anal->cur->op) {
+	RAnal *a = anal;
+	if (r_arch_lazysession_can_decode (a->lsa)) {
+		RArchInstruction ins = {0};
+		r_arch_instruction_init_data (&ins, addr, data, len);
+		int flags = mask_anal_to_arch (mask);
+		if (!r_arch_session_decode (a->lsa->session, &ins, flags)) {
+			ret = -1;
+			op->type = R_ANAL_OP_TYPE_ILL;
+			op->size = 1; // minopsize
+		} else {
+			/* RArchInstruction -> RAnalOp */
+			r_strbuf_copy (&op->esil, &ins.esil);
+			op->addr = ins.addr;
+			op->type = ins.type;
+			op->jump = op->fail = UT64_MAX;
+			op->id = ins.opid;
+			switch (ins.dest.capacity) {
+			case 0:
+				break;
+			case 1:
+				{
+				ut64 *jump = r_vector_index_ptr (&ins.dest, 0);
+				op->jump = *jump;
+				}
+				break;
+			case 2:
+				{
+					ut64 *jumps = r_vector_index_ptr (&ins.dest, 0);
+					op->jump = jumps[0];
+					op->fail = jumps[1];
+				}
+				break;
+			default:
+				// jump table ?
+				break;
+			}
+			op->size = ins.size;
+			r_arch_instruction_fini (&ins);
+			ret = op->size;
+		}
+	} else if (len > 0 && anal->cur && anal->cur->op) {
 		//use core binding to set asm.bits correctly based on the addr
 		//this is because of the hassle of arm/thumb
 		if (anal && anal->coreb.archbits) {

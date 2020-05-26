@@ -574,6 +574,7 @@ static bool cb_asmarch(void *user, void *data) {
 		eprintf ("asm.arch: cannot find (%s)\n", node->value);
 		return false;
 	}
+	r_arch_lazysession_set_plugin (core->anal->lsa, node->value);
 	//we should strdup here otherwise will crash if any r_config_set
 	//free the old value
 	char *asm_cpu = strdup (r_config_get (core->config, "asm.cpu"));
@@ -737,12 +738,32 @@ static bool cb_asmbits(void *user, void *data) {
 #endif
 #endif
 				char *rp = core->dbg->h->reg_profile (core->dbg);
-				r_reg_set_profile_string (core->dbg->reg, rp);
-				r_reg_set_profile_string (core->anal->reg, rp);
+				if (!r_reg_set_profile_string (core->dbg->reg, rp)) {
+					eprintf ("Failed to set the debug regprofile\n");
+				}
+				if (!r_reg_set_profile_string (core->anal->reg, rp)) {
+					eprintf ("Failed to set the anal regprofile\n");
+				}
 				free (rp);
 			}
 		} else {
-			(void)r_anal_set_reg_profile (core->anal);
+			r_arch_lazysession_set_bits (core->anal->lsa, bits);
+			//  Create a new instance if needed
+			if (r_arch_lazysession_can_regprofile (core->rasm->lsd)) {
+				RArchLazySession *ls = core->rasm->lsd;
+				RReg *reg = r_config_get_i (core->config, "cfg.debug")? core->dbg->reg: core->anal->reg;
+				// TODO: we should pick the profile from the anal->arch-session
+				const char *rp = ls->session->info.regprofile;
+				if (rp) {
+					if (!r_reg_set_profile_string (reg, rp)) {
+						eprintf ("Failed to set the anal regprofile\n");
+					}
+				} else {
+					eprintf ("No regprofile provided by this pugin\n");
+				}
+			} else {
+				(void)r_anal_set_reg_profile (core->anal);
+			}
 		}
 	}
 	r_core_anal_cc_init (core);
@@ -760,8 +781,10 @@ static bool cb_asmbits(void *user, void *data) {
 			r_config_set_i (core->config, "dbg.bpsize", r_bp_size (core->dbg->bp));
 		}
 		/* set pcalign */
-		int v = r_anal_archinfo (core->anal, R_ANAL_ARCHINFO_ALIGN);
-		r_config_set_i (core->config, "asm.pcalign", (v != -1)? v: 0);
+		int v = (core->rasm->lsd && core->rasm->lsd->session)
+			? core->rasm->lsd->session->info.align
+			: r_anal_archinfo (core->anal, R_ANAL_ARCHINFO_ALIGN);
+		r_config_set_i (core->config, "asm.pcalign", v);
 	}
 	return ret;
 }

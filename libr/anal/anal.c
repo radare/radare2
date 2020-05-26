@@ -226,12 +226,21 @@ R_API bool r_anal_use(RAnal *anal, const char *name) {
 }
 
 R_API char *r_anal_get_reg_profile(RAnal *anal) {
-	return (anal && anal->cur && anal->cur->get_reg_profile)
+	r_return_val_if_fail (anal, NULL);
+	if (r_arch_lazysession_can_decode (anal->lsa)) {
+		// XXX unnecessary strdup here
+		return strdup (anal->lsa->session->info.regprofile);
+	}
+	return (anal->cur && anal->cur->get_reg_profile)
 		? anal->cur->get_reg_profile (anal) : NULL;
 }
 
 // deprecate.. or at least reuse get_reg_profile...
 R_API bool r_anal_set_reg_profile(RAnal *anal) {
+	if (r_arch_lazysession_can_decode (anal->lsa)) {
+		const char *r = anal->lsa->session->info.regprofile;
+		r_reg_set_profile_string (anal->reg, r);
+	}
 	bool ret = false;
 	if (anal && anal->cur && anal->cur->set_reg_profile) {
 		ret = anal->cur->set_reg_profile (anal);
@@ -313,7 +322,7 @@ R_API bool r_anal_set_bits(RAnal *anal, int bits) {
 		if (anal->bits != bits) {
 			anal->bits = bits;
 			r_anal_set_fcnsign (anal, NULL);
-			r_anal_set_reg_profile (anal);
+			(void)r_anal_set_reg_profile (anal);
 		}
 		return true;
 	}

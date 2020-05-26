@@ -1767,7 +1767,7 @@ R_API ut32 r_anal_function_cost(RAnalFunction *fcn) {
 		(void)anal->iob.read_at (anal->iob.io, bb->addr, (ut8 *) buf, bb->size);
 		int idx = 0;
 		for (at = bb->addr; at < end;) {
-			memset (&op, 0, sizeof (op));
+			r_anal_op_init (&op);
 			(void) r_anal_op (anal, &op, at, buf + idx, bb->size - idx, R_ANAL_OP_MASK_BASIC);
 			if (op.size < 1) {
 				op.size = 1;

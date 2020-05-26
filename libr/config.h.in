@@ -16,6 +16,7 @@
 #define R_IO_STATIC_PLUGINS @plugins_io@
 #define R_DEBUG_STATIC_PLUGINS @plugins_debug@
 #define R_BP_STATIC_PLUGINS @plugins_bp@
+#define R_ARCH_STATIC_PLUGINS @plugins_arch@
 #define R_ASM_STATIC_PLUGINS @plugins_asm@
 #define R_ANAL_STATIC_PLUGINS @plugins_anal@
 #define R_CORE_STATIC_PLUGINS @plugins_core@

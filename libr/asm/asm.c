@@ -33,6 +33,13 @@ static void parseHeap(RParse *p, RStrBuf *s) {
 	}
 }
 
+static bool lazy_update_arch_plugin(RAsm *a, RArchLazySession *ls) {
+	if (!a || !ls) {
+		return false;
+	}
+	ls->session = r_arch_lazysession_get_session (ls);
+	return true;
+}
 /* pseudo.c - private api */
 static int r_asm_pseudo_align(RAsmCode *acode, RAsmOp *op, char *input) {
 	acode->code_align = r_num_math (NULL, input);
@@ -289,7 +296,7 @@ R_API int r_asm_del(RAsm *a, const char *name) {
 R_API bool r_asm_is_valid(RAsm *a, const char *name) {
 	RAsmPlugin *h;
 	RListIter *iter;
-	if (!name || !*name) {
+	if (R_STR_ISEMPTY (name)) {
 		return false;
 	}
 	r_list_foreach (a->plugins, iter, h) {
@@ -301,6 +308,10 @@ R_API bool r_asm_is_valid(RAsm *a, const char *name) {
 }
 
 R_API bool r_asm_use_assembler(RAsm *a, const char *name) {
+	r_return_val_if_fail (a && name, false);
+	if (r_arch_lazysession_set_plugin (a->lsa, name)) {
+		return true;
+	}
 	RAsmPlugin *h;
 	RListIter *iter;
 	if (a) {
@@ -317,13 +328,16 @@ R_API bool r_asm_use_assembler(RAsm *a, const char *name) {
 	return false;
 }
 
-// TODO: this can be optimized using r_str_hash()
+// TODO: optimize using r_str_hash()
 R_API bool r_asm_use(RAsm *a, const char *name) {
+	r_return_val_if_fail (a && name, false);
+
+	if (r_arch_lazysession_set_plugin (a->lsd, name)) {
+		return true;
+	}
+
 	RAsmPlugin *h;
 	RListIter *iter;
-	if (!a || !name) {
-		return false;
-	}
 	r_list_foreach (a->plugins, iter, h) {
 		if (!strcmp (h->name, name) && h->arch) {
 			if (!a->cur || (a->cur && strcmp (a->cur->arch, h->arch))) {
@@ -346,10 +360,17 @@ R_API bool r_asm_use(RAsm *a, const char *name) {
 	return false;
 }
 
-R_DEPRECATE R_API void r_asm_set_cpu(RAsm *a, const char *cpu) {
-	if (a) {
-		free (a->cpu);
-		a->cpu = cpu? strdup (cpu): NULL;
+// TODO: check if the cpu is valid and return bool not void
+R_API void r_asm_set_cpu(RAsm *a, const char *cpu) {
+	r_return_if_fail (a);
+	if (cpu && a->cpu && !strcmp (cpu, a->cpu)) {
+		return;
+	}
+	R_FREE (a->cpu);
+	if (cpu) {
+		r_arch_lazysession_set_cpu (a->lsa, cpu);
+		r_arch_lazysession_set_cpu (a->lsd, cpu);
+		a->cpu = strdup (cpu);
 	}
 }
 
@@ -357,9 +378,15 @@ static bool has_bits(RAsmPlugin *h, int bits) {
 	return (h && h->bits && (bits & h->bits));
 }
 
-R_DEPRECATE R_API int r_asm_set_bits(RAsm *a, int bits) {
+R_API int r_asm_set_bits(RAsm *a, int bits) {
+	// r_arch
+	r_arch_lazysession_set_bits (a->lsa, bits);
+	r_arch_lazysession_set_bits (a->lsd, bits);
+	// r_asm
 	if (has_bits (a->cur, bits)) {
-		a->bits = bits; // TODO : use OR? :)
+		if (a->bits != bits) {
+			a->bits = bits;
+		}
 		return true;
 	}
 	return false;
@@ -367,6 +394,7 @@ R_DEPRECATE R_API int r_asm_set_bits(RAsm *a, int bits) {
 
 R_API bool r_asm_set_big_endian(RAsm *a, bool b) {
 	r_return_val_if_fail (a && a->cur, false);
+	bool old_endian = a->big_endian;
 	a->big_endian = false; // little endian by default
 	switch (a->cur->endian) {
 	case R_SYS_ENDIAN_NONE:
@@ -382,6 +410,7 @@ R_API bool r_asm_set_big_endian(RAsm *a, bool b) {
 		break;
 	default:
 		eprintf ("RAsmPlugin doesn't specify endianness\n");
+		a->big_endian = old_endian;
 		break;
 	}
 	return a->big_endian;
@@ -407,17 +436,14 @@ R_API int r_asm_set_pc(RAsm *a, ut64 pc) {
 	return true;
 }
 
-static bool __isInvalid (RAsmOp *op) {
+static bool __isInvalid(RAsmOp *op) {
 	const char *buf_asm = r_strbuf_get (&op->buf_asm);
 	return (buf_asm && *buf_asm && !strcmp (buf_asm, "invalid"));
 }
 
 R_API int r_asm_disassemble(RAsm *a, RAsmOp *op, const ut8 *buf, int len) {
+	r_return_val_if_fail (a && buf && op && len > 0, -1);
 	r_asm_op_init (op);
-	r_return_val_if_fail (a && buf && op, -1);
-	if (len < 1) {
-		return 0;
-	}
 
 	int ret = op->payload = 0;
 	op->size = 4;
@@ -431,7 +457,18 @@ R_API int r_asm_disassemble(RAsm *a, RAsmOp *op, const ut8 *buf, int len) {
 			return -1;
 		}
 	}
-	if (a->cur && a->cur->disassemble) {
+	RArchSession *as = r_arch_lazysession_get_session (a->lsd);
+	if (as && r_arch_session_can_decode (as)) {
+		RArchDecodeOptions opt = R_ARCH_OPTION_CODE;
+		RArchInstruction ai;
+		r_arch_instruction_init_data (&ai, a->pc, buf, len);
+		ret = r_arch_session_decode (as, &ai, opt);
+		if (ret) {
+			const char *buf_asm = r_strbuf_get (&ai.code);
+			r_strbuf_set (&op->buf_asm, buf_asm);
+			op->size = ai.size;
+		}
+	} else if (a->cur && a->cur->disassemble) {
 		// shift buf N bits
 		if (a->bitshift > 0) {
 			ut8 *tmp = calloc (len, 1);
@@ -568,6 +605,8 @@ R_API void r_asm_list_directives() {
 // returns instruction size
 R_API int r_asm_assemble(RAsm *a, RAsmOp *op, const char *buf) {
 	r_return_val_if_fail (a && op && buf, 0);
+	//lazy_update_arch_plugin (a, a->lsa);
+	RArchSession *session = r_arch_lazysession_get_session (a->lsa);
 	int ret = 0;
 	char *b = strdup (buf);
 	if (!b) {

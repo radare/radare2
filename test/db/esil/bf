@@ -24,8 +24,8 @@ pd 3 @ 0xa
 EOF
 EXPECT=<<EOF
 Hello World!
-        ,=< 0x0000000a      5b             while [ptr]
-        |   0x0000000b      3e             inc ptr
+       ,,=< 0x0000000a      5b             while [ptr]
+       `--> 0x0000000b      3e             inc ptr
         |   0x0000000c      2b2b2b2b2b2b.  add [ptr], 7
 EOF
 RUN

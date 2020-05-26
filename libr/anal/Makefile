@@ -5,7 +5,7 @@ EXTRA_CLEAN=doclean
 CFLAGS+=-I..
 
 NAME=r_anal
-DEPS=r_util r_reg r_syscall r_search r_cons r_flag r_hash r_crypto r_parse
+DEPS=r_util r_reg r_syscall r_search r_cons r_flag r_hash r_crypto r_parse r_arch
 CFLAGS+=-DR2_PLUGIN_INCORE -Iarch -I$(TOP)/shlr
 CFLAGS+=-I$(LTOP)/asm/arch/include
 

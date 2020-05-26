@@ -3,6 +3,7 @@ executable('ragg2', 'ragg2.c',
   dependencies: [
     r_util_dep,
     r_main_dep,
+    r_arch_dep,
     r_egg_dep,
     r_bin_dep,
     r_core_dep,

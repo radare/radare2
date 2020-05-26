@@ -6,7 +6,6 @@ anal_plugins = [
   'arm_cs',
   'arm_gnu',
   'avr',
-  'bf',
   'chip8',
   'cr16',
   'cris',
@@ -64,7 +63,6 @@ asm_plugins = [
   'arm_gnu',
   'arm_winedbg',
   'avr',
-  'bf',
   'chip8',
   'cr16',
   'cris_gnu',
@@ -301,12 +299,17 @@ if host_machine.system() == 'windows'
   ]
 endif
 
+arch_plugins = [
+  'bf',
+]
+
 lang_plugins = [
   'c',
   'cpipe',
   'lib',
   'pipe',
   'rust',
+  'v',
   'vala'
 ]
 
@@ -331,6 +334,7 @@ include_files =[
   'include/r_agraph.h',
   'include/r_anal.h',
   'include/r_asm.h',
+  'include/r_arch.h',
   'include/r_bind.h',
   'include/r_getopt.h',
   'include/r_bin_dwarf.h',

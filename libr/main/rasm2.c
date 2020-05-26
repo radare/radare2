@@ -2,6 +2,7 @@
 
 #include <r_anal.h>
 #include <r_asm.h>
+#include <r_arch.h>
 #include <r_lib.h>
 #include <r_types.h>
 #include <r_util.h>
@@ -13,6 +14,7 @@ typedef struct {
 	RLib *l;
 	RAsm *a;
 	RAnal *anal;
+	RArch *arch;
 	bool oneliner;
 	bool coutput;
 	bool json;
@@ -22,11 +24,16 @@ typedef struct {
 static void __load_plugins(RAsmState *as);
 
 static void __as_set_archbits(RAsmState *as) {
+	int sysbits = (R_SYS_BITS & R_SYS_BITS_64)? 64: 32;
+#if 1
 	r_asm_use (as->a, R_SYS_ARCH);
 	r_anal_use (as->anal, R_SYS_ARCH);
-	int sysbits = (R_SYS_BITS & R_SYS_BITS_64)? 64: 32;
 	r_asm_set_bits (as->a, sysbits);
 	r_anal_set_bits (as->anal, sysbits);
+#else
+	r_arch_use (as->arch, R_SYS_ARCH);
+	r_arch_set_bits (as->arch, sys_bits);
+#endif
 }
 
 static RAsmState *__as_new() {
@@ -38,6 +45,9 @@ static RAsmState *__as_new() {
 			as->a->num = r_num_new (NULL, NULL, NULL);
 		}
 		as->anal = r_anal_new ();
+		as->arch = r_arch_new ();
+	//	as->a->arch = as->arch;
+	//	as->anal->arch = as->arch;
 		__load_plugins (as);
 		__as_set_archbits (as);
 	}
@@ -50,6 +60,7 @@ static void __as_free(RAsmState *as) {
 	}
 	r_asm_free (as->a);
 	r_anal_free (as->anal);
+	r_arch_free (as->arch);
 	r_lib_free (as->l);
     	free (as);
 }
@@ -480,6 +491,14 @@ static int __lib_anal_cb(RLibPlugin *pl, void *user, void *data) {
 	return true;
 }
 
+/* arch callback */
+static int __lib_arch_cb(RLibPlugin *pl, void *user, void *data) {
+	RArchPlugin *hand = (RArchPlugin *)data;
+	RAsmState *as = (RAsmState *)user;
+	r_arch_add (as->arch, hand);
+	return true;
+}
+
 static int print_assembly_output(RAsmState *as, const char *buf, ut64 offset, ut64 len, int bits,
                                  int bin, bool use_spp, bool rad, bool hexwords, const char *arch) {
 	if (rad) {
@@ -507,6 +526,7 @@ static void __load_plugins(RAsmState *as) {
 	}
 	r_lib_add_handler (as->l, R_LIB_TYPE_ASM, "(dis)assembly plugins", &__lib_asm_cb, NULL, as);
 	r_lib_add_handler (as->l, R_LIB_TYPE_ANAL, "analysis/emulation plugins", &__lib_anal_cb, NULL, as);
+	r_lib_add_handler (as->l, R_LIB_TYPE_ARCH, "unified architeture plugins", &__lib_arch_cb, NULL, as);
 
 	char *path = r_sys_getenv (R_LIB_ENV);
 	if (path && *path) {
