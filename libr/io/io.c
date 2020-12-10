@@ -107,6 +107,7 @@ R_API RIO* r_io_init(RIO* io) {
 	r_return_val_if_fail (io, NULL);
 	io->addrbytes = 1;
 	io->cb_printf = printf; // r_cons_printf;
+	io->banks = r_io_banks_new ();
 	r_io_desc_init (io);
 	r_skyline_init (&io->map_skyline);
 	r_io_map_init (io);
