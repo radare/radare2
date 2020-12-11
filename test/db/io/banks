@@ -1,0 +1,19 @@
+NAME=omb banks
+FILE=malloc://1024
+CMDS=<<EOF
+om
+omb+map 1
+omb+nomap
+omb nomap
+om
+omb map
+om
+omb-*
+omb -1
+EOF
+EXPECT=<<EOF
+ 1 fd: 3 +0x00000000 0x00000000 - 0x000003ff rwx 
+ 1 fd: 3 +0x00000000 0x00000000 - 0x000003ff rwx 
+ 1 fd: 3 +0x00000000 0x00000000 - 0x000003ff rwx 
+EOF
+RUN

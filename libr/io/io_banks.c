@@ -2,7 +2,7 @@
 
 #include <r_io.h>
 
-R_API RIOBanks *r_io_banks_new() {
+R_API RIOBanks *r_io_banks_new(void) {
 	RIOBanks *banks = R_NEW0 (RIOBanks);
 	banks->curbank = NULL;
 	banks->list = r_list_newf ((RListFree)r_io_bank_free);
@@ -34,11 +34,13 @@ R_API char *r_io_banks_list(RIO *io, int mode) {
 	RListIter *iter;
 	RIOBank *bank;
 	r_list_foreach (io->banks->list, iter, bank) {
-		r_strbuf_appendf (sb, "bank %d (%s)\n", bank->id, bank->name);
+		const char *mark = (io->banks->curbank == bank)? "(selected)": "";
+		r_strbuf_appendf (sb, "%d: %s %s\n", bank->id, bank->name, mark);
 		void **it;
 		r_pvector_foreach (&bank->maps, it) {
 			int id = (int)(size_t)*it;
-			r_strbuf_appendf (sb, " map %d\n", id);
+			RIOMap *map = *it;
+			r_strbuf_appendf (sb, "  - map %d\n", map->id);
 		}
 	}
 	return r_strbuf_drain (sb);
@@ -55,8 +57,19 @@ R_API bool r_io_banks_use(RIO *io, int id) {
 	}
 	RIOBank *bank = r_id_storage_get (io->banks->ids, id);
 	if (bank) {
+		if (bank == io->banks->curbank) {
+			return true;
+		}
+		if (io->banks->curbank) {
+			RIOBank *b = io->banks->curbank;
+			b->maps = io->maps;
+			b->map_ids = io->map_ids;
+		}
 		io->banks->curbank = bank;
-		if (r_pvector_len (&io->banks->maps)) {
+		if (io->banks->map_ids) { // r_pvector_len (&io->banks->maps)) {
+			io->banks->maps = io->maps;
+			io->banks->map_ids = io->map_ids;
+		} else {
 			io->banks->maps = io->maps;
 			io->banks->map_ids = io->map_ids;
 		}

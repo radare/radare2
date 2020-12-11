@@ -396,7 +396,7 @@ R_API void r_io_bank_free(RIOBank *bank);
 R_API void r_io_bank_rename(RIOBank *bank, const char *name);
 
 /* banks */
-R_API RIOBanks *r_io_banks_new();
+R_API RIOBanks *r_io_banks_new(void);
 R_API void r_io_banks_reset(RIO *io);
 R_API void r_io_banks_add(RIO *io, RIOBank *bank);
 R_API bool r_io_banks_del(RIO *io, RIOBank *bank);

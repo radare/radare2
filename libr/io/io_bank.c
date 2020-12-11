@@ -14,7 +14,7 @@ R_API RIOBank* r_io_new_bank(RIO *io, const char *name) {
 }
 
 R_API void r_io_bank_add_map(RIOBank *bank, RIOMap *map) {
-	r_pvector_push (&bank->maps, (void*)(size_t)map->id);
+	r_pvector_push (&bank->maps, map); // (void*)(size_t)map->id);
 }
 
 R_API void r_io_bank_free(RIOBank *bank) {
@@ -26,4 +26,3 @@ R_API void r_io_bank_rename(RIOBank *bank, const char *name) {
 	free (bank->name);
 	bank->name = strdup (name);
 }
-
