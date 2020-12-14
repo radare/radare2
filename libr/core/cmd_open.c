@@ -54,6 +54,7 @@ static const char *help_msg_omb[] = {
 	"omb", "", "list all memory banks",
 	"omb", " [name|id]", "switch to use a different bank",
 	"omb+", "[name] [mapid ...]", "add a new bank with the given maps",
+	"omb-", "", "unselect all io banks",
 	"omb-", "*", "delete all banks",
 	"omb-", "3", "delete the bank with given id",
 	NULL
@@ -695,7 +696,9 @@ static void cmd_open_banks(RCore *core, const char *input) {
 		r_core_cmd_help (core, help_msg_omb);
 		break;
 	case '-': // "omb-[]"
-		if (input[1] == '*') {
+		if (input[1] == 0) {
+			r_io_banks_use (core->io, -1);
+		} else if (input[1] == '*') {
 			r_io_banks_reset (core->io);
 		} else {
 			int id = atoi (input + 1);
