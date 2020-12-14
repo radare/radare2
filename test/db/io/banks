@@ -2,8 +2,8 @@ NAME=omb banks
 FILE=malloc://1024
 CMDS=<<EOF
 om
-omb+map 1
-omb+nomap
+omb+ map 1
+omb+ nomap
 omb nomap
 om
 omb map
@@ -15,5 +15,47 @@ EXPECT=<<EOF
  1 fd: 3 +0x00000000 0x00000000 - 0x000003ff rwx 
  1 fd: 3 +0x00000000 0x00000000 - 0x000003ff rwx 
  1 fd: 3 +0x00000000 0x00000000 - 0x000003ff rwx 
+Usage: omb[jq,+] [fd]  Operate on memory banks
+| omb                     list all memory banks
+| omb [id]                switch to use a different bank
+| omb+[name] [mapid ...]  add a new bank with the given maps, or add maps to existing bank
+| omb-*                   delete all banks
+| omb-[mapid ...]         delete the bank with given id
+EOF
+RUN
+
+NAME=omb+ needs a space to work (BUG?)
+FILE=malloc://1024
+CMDS=<<EOF
+omb+one
+omb+ two
+omb
+EOF
+EXPECT=<<EOF
+Usage: omb[jq,+] [fd]  Operate on memory banks
+| omb                     list all memory banks
+| omb [id]                switch to use a different bank
+| omb+[name] [mapid ...]  add a new bank with the given maps, or add maps to existing bank
+| omb-*                   delete all banks
+| omb-[mapid ...]         delete the bank with given id
+1: two 
+
+EOF
+RUN
+
+NAME=omb name deletes them all (BUG)
+BROKEN=1
+FILE=malloc://1024
+CMDS=<<EOF
+omb+ one
+omb
+omb one
+omb
+EOF
+EXPECT=<<EOF
+1: one 
+
+1: one 
+
 EOF
 RUN

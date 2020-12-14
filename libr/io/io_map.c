@@ -20,23 +20,6 @@ static void io_map_calculate_skyline(RIO *io) {
 	}
 }
 
-R_API void r_io_map_bank(RIO *io, RIOBank *bank) {
-	if (bank) {
-		io->maps = bank->maps;
-		io->map_ids = bank->map_ids;
-	} else {
-		if (r_pvector_len (&io->banks->maps)) {
-			io->maps = io->banks->maps;
-		}
-		if (io->banks->map_ids) {
-			io->map_ids = io->banks->map_ids;
-		}
-		r_pvector_clear (&io->banks->maps);
-		io->banks->map_ids = NULL;
-	}
-	io_map_calculate_skyline (io);
-}
-
 RIOMap* io_map_new(RIO* io, int fd, int perm, ut64 delta, ut64 addr, ut64 size) {
 	r_return_val_if_fail (io && io->map_ids, NULL);
 	if (!size) {
@@ -47,6 +30,7 @@ RIOMap* io_map_new(RIO* io, int fd, int perm, ut64 delta, ut64 addr, ut64 size) 
 		free (map);
 		return NULL;
 	}
+	map->ts = r_time_now ();
 	map->fd = fd;
 	map->delta = delta;
 	if ((UT64_MAX - size + 1) < addr) {

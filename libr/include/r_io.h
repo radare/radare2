@@ -90,21 +90,11 @@ typedef struct r_io_undo_t {
 } RIOUndo;
 
 
-typedef struct {
-	RPVector maps; // associated maps, maybe by ID better than pointer
-	RIDPool *map_ids;
+typedef struct r_io_bank_t {
+	RList *map_refs;
 	char *name;
-	int id;
+	ut32 id;
 } RIOBank;
-
-typedef struct {
-	RIOBank *curbank; // id of the currently selected bank
-	RPVector maps; // backup of io->maps
-	RIDPool *map_ids; // backup of io->map_ids
-	RIDStorage *ids; // bank ids
-	RList *list; // list of banks
-} RIOBanks;
-
 
 typedef struct r_io_undo_w_t {
 	bool set;
@@ -127,6 +117,7 @@ typedef struct r_io_t {
 	ut32 cached; // uses R_PERM_RWX
 	bool cachemode; // write in cache all the read operations (EXPERIMENTAL)
 	ut32 p_cache; // uses 1, 2, 4.. probably R_PERM_RWX :D
+	ut32 curbank;	// id of current bank
 	RIDPool *map_ids;
 	RPVector maps; //from tail backwards maps with higher priority are found
 	RSkyline map_skyline; // map parts that are not covered by others
@@ -146,7 +137,8 @@ typedef struct r_io_t {
 	REvent *event;
 	PrintfCallback cb_printf;
 	RCoreBind corebind;
-	RIOBanks *banks;
+	RIDStorage *banks;
+	// RIOBanks *banks;
 	bool want_ptrace_wrap;
 #if __WINDOWS__
 	struct w32dbg_wrap_instance_t *w32dbg_wrap;
@@ -211,6 +203,7 @@ typedef struct r_io_map_t {
 	int fd;
 	int perm;
 	ut32 id;
+	ut64 ts;
 	RInterval itv;
 	ut64 delta; // paddr = vaddr - itv.addr + delta
 	char *name;
@@ -389,23 +382,20 @@ R_API RIOPlugin *r_io_plugin_resolve(RIO *io, const char *filename, bool many);
 R_API RIOPlugin *r_io_plugin_get_default(RIO *io, const char *filename, bool many);
 
 /* bank */
-R_API void r_io_map_bank(RIO *io, RIOBank *bank);
-R_API RIOBank* r_io_new_bank(RIO *io, const char *name);
-R_API void r_io_bank_add_map(RIOBank *bank, RIOMap *map);
+R_API void r_io_use_bank(RIO *io, RIOBank *bank);
+R_API RIOBank* r_io_new_bank(const char *name);
+R_API bool r_io_bank_add_map(RIO *io, RIOBank *bank, ut32 map_id);
 R_API void r_io_bank_free(RIOBank *bank);
 R_API void r_io_bank_rename(RIOBank *bank, const char *name);
 
 /* banks */
-R_API RIOBanks *r_io_banks_new(void);
 R_API void r_io_banks_reset(RIO *io);
-R_API void r_io_banks_add(RIO *io, RIOBank *bank);
+R_API bool r_io_banks_add(RIO *io, RIOBank *bank);
 R_API bool r_io_banks_del(RIO *io, RIOBank *bank);
-R_API char *r_io_banks_id(RIO *io);
 R_API char *r_io_banks_list(RIO *io, int mode);
-R_API bool r_io_banks_use(RIO *io, int id);
-R_API ut32 r_io_bank_id(RIO *io);
+R_API bool r_io_banks_use(RIO *io, ut32 id);
 R_API RIOBank* r_io_bank_get_by_name(RIO *io, const char *name);
-R_API RIOBank* r_io_bank_get_by_id(RIO *io, int id);
+R_API RIOBank* r_io_bank_get_by_id(RIO *io, ut32 id);
 
 /* undo api */
 // track seeks and writes

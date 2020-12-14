@@ -2,103 +2,73 @@
 
 #include <r_io.h>
 
-R_API RIOBanks *r_io_banks_new(void) {
-	RIOBanks *banks = R_NEW0 (RIOBanks);
-	banks->curbank = NULL;
-	banks->list = r_list_newf ((RListFree)r_io_bank_free);
-	banks->ids = r_id_storage_new (1, UT32_MAX);
-	return banks;
-}
-
-R_API void r_io_banks_add(RIO *io, RIOBank *bank) {
-	r_return_if_fail (io && bank);
+R_API bool r_io_banks_add(RIO *io, RIOBank *bank) {
+	r_return_val_if_fail (io && bank, false);
 	// TODO: check if its registered first
-	ut32 id;
-	r_id_storage_add (io->banks->ids, bank, &id);
-	bank->id = id;
-	r_list_append (io->banks->list, bank);
+	return r_id_storage_add (io->banks, bank, &bank->id);
 }
 
 R_API bool r_io_banks_del(RIO *io, RIOBank *bank) {
-	r_id_storage_delete (io->banks->ids, bank->id);
-	r_list_delete_data (io->banks->list, bank);
-	if (bank == io->banks->curbank) {
-		io->banks->curbank = NULL;
-	}
-	// r_io_bank_free (bank);
-	return false;
+	r_return_val_if_fail (io && io->banks && bank, false);
+	// check if bank is a bank of this instance of io
+	r_return_val_if_fail (r_id_storage_get (io->banks, bank->id) == bank, false);
+	r_id_storage_delete (io->banks, bank->id);
+	r_io_bank_free (bank);
+	return true;
 }
 
-R_API char *r_io_banks_list(RIO *io, int mode) {
-	RStrBuf *sb = r_strbuf_new ("");
-	RListIter *iter;
-	RIOBank *bank;
-	r_list_foreach (io->banks->list, iter, bank) {
-		const char *mark = (io->banks->curbank == bank)? "(selected)": "";
-		r_strbuf_appendf (sb, "%d: %s %s\n", bank->id, bank->name, mark);
-		void **it;
-		r_pvector_foreach (&bank->maps, it) {
-			int id = (int)(size_t)*it;
-			RIOMap *map = *it;
-			r_strbuf_appendf (sb, "  - map %d\n", map->id);
-		}
-	}
-	return r_strbuf_drain (sb);
-}
-
-R_API bool r_io_banks_use(RIO *io, int id) {
-	if (id < 0) {
-		if (io->banks->curbank) {
-			r_io_map_bank (io, io->banks->curbank);
-			io->banks->curbank = NULL;
-			return true;
-		}
-		return false;
-	}
-	RIOBank *bank = r_id_storage_get (io->banks->ids, id);
-	if (bank) {
-		if (bank == io->banks->curbank) {
-			return true;
-		}
-		if (io->banks->curbank) {
-			RIOBank *b = io->banks->curbank;
-			b->maps = io->maps;
-			b->map_ids = io->map_ids;
-		}
-		io->banks->curbank = bank;
-		if (io->banks->map_ids) { // r_pvector_len (&io->banks->maps)) {
-			io->banks->maps = io->maps;
-			io->banks->map_ids = io->map_ids;
-		} else {
-			io->banks->maps = io->maps;
-			io->banks->map_ids = io->map_ids;
-		}
-		io->maps = bank->maps;
-		io->map_ids = bank->map_ids;
+R_API bool r_io_banks_use(RIO *io, ut32 id) {
+	r_return_val_if_fail (io, false);
+	if (id == 0) {
+		r_io_banks_reset (io);
 		return true;
 	}
-	return false;
+	RIOBank *bank = (RIOBank *)r_id_storage_get (io->banks, id);
+	if (!bank) {
+		return false;
+	}
+	r_io_map_bank (io, bank);
+	return true;
+}
+
+static bool bank_free_cb(void *user, void *data, ut32 id) {
+	r_io_bank_free ((RIOBank *)data);
+	return true;
 }
 
 R_API void r_io_banks_reset(RIO *io) {
-	r_io_banks_use (io, -1);
-	r_list_free (io->banks->list);
-	io->banks->list = r_list_newf ((RListFree)r_io_bank_free);
-	r_id_storage_free (io->banks->ids);
-	io->banks->ids = r_id_storage_new (0, UT32_MAX);
+	r_return_if_fail (io);
+	io->curbank = 0;
+	r_id_storage_foreach (io->banks, bank_free_cb, NULL);
+	r_id_storage_free (io->banks);
+	io->banks = r_id_storage_new (1, UT32_MAX);
 }
 
-R_API RIOBank* r_io_bank_get_by_name(RIO *io, const char *name) {
-	RListIter *iter;
+typedef struct bank_finder_t {
+	const char *name;
 	RIOBank *bank;
-	r_list_foreach (io->banks->list, iter, bank) {
-		if (!strcmp (bank->name, name)) {
-			return bank;
-		}
+} BankFinder;
+
+static bool bank_find_by_name_cb(void *user, void *data, ut32 id) {
+	BankFinder *bf = (BankFinder *)user;
+	RIOBank *bank = (RIOBank *)data;
+	if (!strcmp (bank->name, bf->name)) {
+		bf->bank = bank;
+		return false;
 	}
-	return NULL;
+	return true;
 }
 
-R_API RIOBank* r_io_bank_get_by_id(RIO *io, int id) {
-	return r_id_storage_get (io->banks->ids, id);
+R_API RIOBank *r_io_bank_get_by_name(RIO *io, const char *name) {
+	r_return_val_if_fail (io && io->banks, NULL);
+	if (R_STR_ISEMPTY (name)) {
+		return NULL;
+	}
+	BankFinder bf = { name, NULL };
+	r_id_storage_foreach (io->banks, bank_find_by_name_cb, &bf);
+	return bf.bank;
+}
+
+R_API RIOBank *r_io_bank_get_by_id(RIO *io, ut32 id) {
+	return (RIOBank *)r_id_storage_get (io->banks, id);
 }
