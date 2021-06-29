@@ -232,17 +232,14 @@ static int r_debug_native_continue(RDebug *dbg, int pid, int tid, int sig) {
 	ut64 pc = r_debug_reg_get (dbg, "PC");
 	return ptrace (PTRACE_CONT, pid, (void*)(size_t)pc, (int)(size_t)data) == 0;
 #else
-	int contsig = dbg->reason.signum;
 	int ret = -1;
-
-	if (sig != -1) {
-		contsig = sig;
+	if (sig == -1) {
+		   sig = dbg->reason.signum;
 	}
 	/* SIGINT handler for attached processes: dbg.consbreak (disabled by default) */
 	if (dbg->consbreak) {
 		r_cons_break_push ((RConsBreak)interrupt_process, dbg);
 	}
-
 	if (dbg->continue_all_threads && dbg->n_threads && dbg->threads) {
 		RDebugPid *th;
 		RListIter *it;
@@ -253,13 +250,12 @@ static int r_debug_native_continue(RDebug *dbg, int pid, int tid, int sig) {
 			}
 		}
 	} else {
-		ret = r_debug_ptrace (dbg, PTRACE_CONT, tid, NULL, (r_ptrace_data_t)(size_t)contsig);
+		ret = r_debug_ptrace (dbg, PTRACE_CONT, tid, NULL, (r_ptrace_data_t)(size_t) sig);
 		if (ret) {
 			r_sys_perror ("PTRACE_CONT");
 		}
 	}
-	//return ret >= 0 ? tid : false;
-	return tid;
+	return ret >= 0 ? tid : 0;
 #endif
 }
 
