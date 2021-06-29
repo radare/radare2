@@ -1,4 +1,4 @@
-/* radare - LGPL - Copyright 2009-2019 - pancake */
+/* radare - LGPL - Copyright 2009-2021 - pancake */
 
 #include <r_userconf.h>
 
@@ -106,12 +106,9 @@ int linux_handle_signals(RDebug *dbg, int tid) {
 					char *p = strstr (b->data, "dbg.");
 					if (p) {
 						if (r_str_startswith (p, "dbg.libs")) {
-							const char *name;
-							if (strstr (b->data, "sym.imp.dlopen")) {
-								name = r_reg_get_name (dbg->reg, R_REG_NAME_A0);
-							} else {
-								name = r_reg_get_name (dbg->reg, R_REG_NAME_A1);
-							}
+							const char *name = strstr (b->data, "sym.imp.dlopen")
+								? r_reg_get_name (dbg->reg, R_REG_NAME_A0)
+								: r_reg_get_name (dbg->reg, R_REG_NAME_A1);
 							b->data = r_str_appendf (b->data, ";ps@r:%s", name);
 							dbg->reason.type = R_DEBUG_REASON_NEW_LIB;
 							break;

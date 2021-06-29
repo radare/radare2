@@ -218,7 +218,6 @@ static int r_debug_native_stop(RDebug *dbg) {
 }
 
 /* TODO: specify thread? */
-/* TODO: must return true/false */
 static int r_debug_native_continue(RDebug *dbg, int pid, int tid, int sig) {
 #if __APPLE__
 	bool ret = xnu_continue (dbg, pid, tid, sig);
