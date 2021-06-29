@@ -97,6 +97,18 @@ int linux_handle_signals(RDebug *dbg, int tid) {
 		// siginfo.si_code -> HWBKPT, USER, KERNEL or WHAT
 		// TODO: DO MORE RDEBUGREASON HERE
 		switch (dbg->reason.signum) {
+		case SIGINT:
+			dbg->reason.type = R_DEBUG_REASON_USERSUSP;
+			break;
+		case SIGSEGV:
+			dbg->reason.type = R_DEBUG_REASON_SEGFAULT;
+			break;
+		case SIGSTOP:
+			dbg->reason.type = R_DEBUG_REASON_STOPPED;
+			break;
+		case SIGTERM:
+			dbg->reason.type = R_DEBUG_REASON_TERMINATED;
+			break;
 		case SIGTRAP:
 		{
 			if (dbg->glob_libs || dbg->glob_unlibs) {
@@ -132,23 +144,10 @@ int linux_handle_signals(RDebug *dbg, int tid) {
 				}
 			}
 		} break;
-		case SIGINT:
-			dbg->reason.type = R_DEBUG_REASON_USERSUSP;
-			break;
-		case SIGABRT: // 6 / SIGIOT // SIGABRT
-			dbg->reason.type = R_DEBUG_REASON_ABORT;
-			break;
-		case SIGSEGV:
-			dbg->reason.type = R_DEBUG_REASON_SEGFAULT;
-			break;
-		case SIGCHLD:
-			dbg->reason.type = R_DEBUG_REASON_SIGNAL;
-			break;
 		default:
 			break;
 		}
-		if (dbg->reason.signum != SIGTRAP &&
-			(dbg->reason.signum != SIGINT || !r_cons_is_breaked ())) {
+		if (dbg->reason.signum != SIGTRAP && (dbg->reason.signum != SIGINT || !r_cons_is_breaked ())) {
 			eprintf ("[+] SIGNAL %d errno=%d addr=0x%08"PFMT64x
 				" code=%d si_pid=%d ret=%d\n",
 				siginfo.si_signo, siginfo.si_errno,
