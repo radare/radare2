@@ -91,7 +91,6 @@ typedef enum {
 	R_DEBUG_REASON_DEAD = -1,
 	R_DEBUG_REASON_NONE = 0,
 	R_DEBUG_REASON_SIGNAL,
-	R_DEBUG_REASON_SEGFAULT,
 	R_DEBUG_REASON_BREAKPOINT,
 	R_DEBUG_REASON_TRACEPOINT,
 	R_DEBUG_REASON_COND,
@@ -114,8 +113,10 @@ typedef enum {
 	R_DEBUG_REASON_INT,
 	R_DEBUG_REASON_FPU,
 	R_DEBUG_REASON_USERSUSP,
+	R_DEBUG_REASON_SEGFAULT,
+	R_DEBUG_REASON_STOPPED,
+	R_DEBUG_REASON_TERMINATED,
 } RDebugReasonType;
-
 
 /* TODO: move to r_anal */
 typedef struct r_debug_frame_t {
@@ -437,6 +438,7 @@ R_API int r_debug_start(RDebug *dbg, const char *cmd);
 /* reason we stopped */
 R_API RDebugReasonType r_debug_stop_reason(RDebug *dbg);
 R_API const char *r_debug_reason_to_string(int type);
+R_API const char *r_signal_to_human(int signum);
 
 /* wait for another event */
 R_API RDebugReasonType r_debug_wait(RDebug *dbg, RBreakpointItem **bp);

@@ -640,8 +640,7 @@ R_API bool r_debug_select(RDebug *dbg, int pid, int tid) {
 R_API const char *r_debug_reason_to_string(int type) {
 	switch (type) {
 	case R_DEBUG_REASON_DEAD: return "dead";
-	case R_DEBUG_REASON_ABORT: return "abort";
-	case R_DEBUG_REASON_SEGFAULT: return "segfault";
+	case R_DEBUG_REASON_ABORT: return "Aborted";
 	case R_DEBUG_REASON_NONE: return "none";
 	case R_DEBUG_REASON_SIGNAL: return "signal";
 	case R_DEBUG_REASON_BREAKPOINT: return "breakpoint";
@@ -661,11 +660,46 @@ R_API const char *r_debug_reason_to_string(int type) {
 	case R_DEBUG_REASON_TRAP: return "trap";
 	case R_DEBUG_REASON_SWI: return "software-interrupt";
 	case R_DEBUG_REASON_INT: return "interrupt";
-	case R_DEBUG_REASON_FPU: return "fpu";
 	case R_DEBUG_REASON_STEP: return "step";
 	case R_DEBUG_REASON_USERSUSP: return "suspended-by-user";
+	case R_DEBUG_REASON_SEGFAULT: return "segfault";
 	}
 	return "unhandled";
+}
+
+R_API const char *r_signal_to_human(int signum) {
+	switch (signum) {
+	case SIGALRM: return "Alarm clock";
+	case SIGBUS: return "Bus error";
+	case SIGCHLD: return "Child";
+	case SIGCONT: return "Continuation";
+#ifdef __sparc
+	case R_SIGNAL_SIGEMT: return "hardware-error-signal";
+#endif
+	case SIGFPE: return "Floating point exception";
+	case SIGHUP: return "Hangup";
+	case SIGILL: return "Illegal instruction";
+	case SIGKILL: return "Killed";
+	case SIGPROF: return "Profiling timer expired";
+	case SIGPWR: return "Power failure";
+	case SIGQUIT: return "Quit";
+	case SIGSEGV: return "Segmentation fault";
+	case SIGSTKFLT: return "Stack fault";
+	case SIGSTOP: return "Stopped";
+	case SIGSYS: return "Bad system call";
+	case SIGTERM: return "Terminated";
+	case SIGTSTP: return "Stopped";
+	case SIGTTIN: return "Stopped";
+	case SIGTTOU: return "Stopped";
+	case SIGURG: return "Urgent";
+	case SIGUSR1: return "User defined signal 1";
+	case SIGUSR2: return "User defined signal 2";
+	case SIGVTALRM: return "Virtual timer expired";
+	case SIGWINCH: return "Window changed size";
+	case SIGXCPU: return "CPU time limit exceeded";
+	case SIGXFSZ: return "File size limit exceeded";
+	default: return "unhandled";
+	}
 }
 
 R_API RDebugReasonType r_debug_stop_reason(RDebug *dbg) {
