@@ -107,6 +107,10 @@ R_API RIO* r_io_init(RIO* io) {
 	r_return_val_if_fail (io, NULL);
 	io->addrbytes = 1;
 	io->cb_printf = printf; // r_cons_printf;
+#if 0
+	io->banks = r_io_banks_new ();
+#endif
+	io->banks = r_id_storage_new (1, UT32_MAX);
 	r_io_desc_init (io);
 	r_skyline_init (&io->map_skyline);
 	r_io_map_init (io);
@@ -689,12 +693,19 @@ R_API void *r_io_ptrace_func(RIO *io, void *(*func)(void *), void *user) {
 }
 #endif
 
+static bool free_banks_cb (void *user, void *data, ut32 id) {
+	RIOBank *bank = (RIOBank *)data;
+	r_io_bank_free (bank);
+	return true;
+}
 
 //remove all descs and maps
 R_API int r_io_fini(RIO* io) {
 	if (!io) {
 		return false;
 	}
+	r_id_storage_foreach (io->banks, free_banks_cb, NULL);
+	r_id_storage_free (io->banks);
 	r_io_desc_cache_fini_all (io);
 	r_io_desc_fini (io);
 	r_io_map_fini (io);
