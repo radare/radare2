@@ -110,6 +110,16 @@ R_API int r_anal_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
 		if (ret < 1) {
 			op->type = R_ANAL_OP_TYPE_ILL;
 		}
+		/* special case some conditionals */
+		if (op->type & R_ANAL_OP_TYPE_COND && op->cond == R_ANAL_COND_AL) {
+			/* Always conditional. */
+			op->cond = 0;
+			op->type &= ~R_ANAL_OP_TYPE_COND;
+		} else if (op->type & R_ANAL_OP_TYPE_COND && op->cond == R_ANAL_COND_NV) {
+			/* Never conditional. */
+			op->cond = 0;
+			op->type = R_ANAL_OP_TYPE_NOP;
+		}
 		op->addr = addr;
 		/* consider at least 1 byte to be part of the opcode */
 		if (op->nopcode < 1) {
