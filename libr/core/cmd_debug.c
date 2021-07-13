@@ -5239,6 +5239,9 @@ static int cmd_debug(void *data, const char *input) {
 					}
 				}
 				if (stop != -1) {
+					if (core->dbg->reason.type == R_DEBUG_REASON_SIGNAL) {
+						P ("signalstr=%s\n", r_signal_to_human (core->dbg->reason.signum));
+					}
 					P ("stopreason=%s\n", r_debug_reason_to_string (stop));
 				}
 				break;

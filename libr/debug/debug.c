@@ -637,33 +637,34 @@ R_API bool r_debug_select(RDebug *dbg, int pid, int tid) {
 	return true;
 }
 
+// TODO type should be enum so we can ensure to not miss an item
 R_API const char *r_debug_reason_to_string(int type) {
 	switch (type) {
-	case R_DEBUG_REASON_DEAD: return "dead";
 	case R_DEBUG_REASON_ABORT: return "abort";
-	case R_DEBUG_REASON_SEGFAULT: return "segfault";
-	case R_DEBUG_REASON_NONE: return "none";
-	case R_DEBUG_REASON_SIGNAL: return "signal";
 	case R_DEBUG_REASON_BREAKPOINT: return "breakpoint";
-	case R_DEBUG_REASON_TRACEPOINT: return "tracepoint";
-	case R_DEBUG_REASON_READERR: return "read-error";
-	case R_DEBUG_REASON_WRITERR: return "write-error";
+	case R_DEBUG_REASON_DEAD: return "dead";
 	case R_DEBUG_REASON_DIVBYZERO: return "div-by-zero";
-	case R_DEBUG_REASON_ILLEGAL: return "illegal";
-	case R_DEBUG_REASON_UNKNOWN: return "unknown";
 	case R_DEBUG_REASON_ERROR: return "error";
-	case R_DEBUG_REASON_NEW_PID: return "new-pid";
-	case R_DEBUG_REASON_NEW_TID: return "new-tid";
-	case R_DEBUG_REASON_NEW_LIB: return "new-lib";
+	case R_DEBUG_REASON_EXIT_LIB: return "exit-lib";
 	case R_DEBUG_REASON_EXIT_PID: return "exit-pid";
 	case R_DEBUG_REASON_EXIT_TID: return "exit-tid";
-	case R_DEBUG_REASON_EXIT_LIB: return "exit-lib";
-	case R_DEBUG_REASON_TRAP: return "trap";
-	case R_DEBUG_REASON_SWI: return "software-interrupt";
-	case R_DEBUG_REASON_INT: return "interrupt";
 	case R_DEBUG_REASON_FPU: return "fpu";
+	case R_DEBUG_REASON_ILLEGAL: return "illegal";
+	case R_DEBUG_REASON_INT: return "interrupt";
+	case R_DEBUG_REASON_NEW_LIB: return "new-lib";
+	case R_DEBUG_REASON_NEW_PID: return "new-pid";
+	case R_DEBUG_REASON_NEW_TID: return "new-tid";
+	case R_DEBUG_REASON_NONE: return "none";
+	case R_DEBUG_REASON_READERR: return "read-error";
+	case R_DEBUG_REASON_SEGFAULT: return "segfault";
+	case R_DEBUG_REASON_SIGNAL: return "signal";
 	case R_DEBUG_REASON_STEP: return "step";
+	case R_DEBUG_REASON_SWI: return "software-interrupt";
+	case R_DEBUG_REASON_TRACEPOINT: return "tracepoint";
+	case R_DEBUG_REASON_TRAP: return "trap";
+	case R_DEBUG_REASON_UNKNOWN: return "unknown";
 	case R_DEBUG_REASON_USERSUSP: return "suspended-by-user";
+	case R_DEBUG_REASON_WRITERR: return "write-error";
 	}
 	return "unhandled";
 }
@@ -1695,13 +1696,15 @@ R_API ut64 r_debug_get_baddr(RDebug *dbg, const char *file) {
 	r_debug_select (dbg, pid, tid);
 	r_debug_map_sync (dbg);
 	char *abspath = r_sys_pid_to_path (pid);
+	if (file) {
 #if !__WINDOWS__
-	if (!abspath) {
-		abspath = r_file_abspath (file);
-	}
+		if (!abspath) {
+			abspath = r_file_abspath (file);
+		}
 #endif
-	if (!abspath && file) {
-		abspath = strdup (file);
+		if (!abspath) {
+			abspath = strdup (file);
+		}
 	}
 	if (abspath) {
 		r_list_foreach (dbg->maps, iter, map) {

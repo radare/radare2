@@ -14,6 +14,7 @@ R_API int r_signal_from_string(const char *str);
 
 /* Return NULL if signal with `code` not found. */
 R_API const char* r_signal_to_string(int code);
+R_API const char *r_signal_to_human(int signum);
 
 // XXX this function should be portable, not-unix specific
 #if __UNIX__
