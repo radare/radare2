@@ -275,10 +275,21 @@ R_API int r_core_pseudo_code(RCore *core, const char *input) {
 		pj_ka (pj, "annotations");
 	}
 	NEWLINE (fcn->addr, indent);
+	PRINTF ("// global registers\n");
+	// only print the used registers
+	PRINTF ("int stack[1024];\n");
+	PRINTF ("unsigned long long *qword = &stack;\n");
+	PRINTF ("unsigned int *dword = &stack;\n");
+	PRINTF ("unsigned short *word = &stack;\n");
+	PRINTF ("unsigned char *byte = &stack;\n");
+	PRINTF ("int eax, ebx, ecx, edx;\n");
 	PRINTF ("// This function contains %d basic blocks and its %d long.",
 		n_bb, (int)r_anal_function_realsize (fcn));
 	NEWLINE (fcn->addr, indent);
-	PRINTF ("function %s () {", fcn->name);
+	const char *S0 = "esp";
+	PRINTF ("static inline void push (int reg) {%s-=%d;stack[%s]=reg;}\n", S0, (int)sizeof (int), S0);
+	PRINTF ("static inline int pop() {int r = stack[%s]; %s+=%d; return r;}\n", S0, S0, (int)sizeof (int));
+	PRINTF ("int %s (int esi, int edx) {", fcn->name);
 	indent++;
 	RList *visited = r_list_newf (NULL);
 	ut64 addr = fcn->addr;
@@ -296,11 +307,14 @@ R_API int r_core_pseudo_code(RCore *core, const char *input) {
 		if (indent * I_TAB + 2 >= sizeof (indentstr)) {
 			indent = (sizeof (indentstr) / I_TAB) - 2;
 		}
+		indent = 2;
 		SET_INDENT (indent);
 		if (!code) {
 			eprintf ("No code here\n");
 			break;
 		}
+		code = r_str_replace (code, ";", "//", true);
+		const char *R0 = "eax";
 		size_t len = strlen (code);
 		code[len - 1] = 0; // chop last newline
 		find_and_change (code, len);
@@ -312,7 +326,7 @@ R_API int r_core_pseudo_code(RCore *core, const char *input) {
 					PRINTF ("goto loc_0x%"PFMT64x, queuegoto);
 					queuegoto = 0LL;
 				}
-				NEWLINE (bb->addr, indent);
+				NEWLINE (bb->addr, indent - 1);
 				PRINTF ("loc_0x%"PFMT64x":", bb->addr);
 				// foreach lines
 				RList *lines = r_str_split_list (code, "\n", 0);
@@ -359,7 +373,7 @@ R_API int r_core_pseudo_code(RCore *core, const char *input) {
 					PRINTF ("}");
 				}
 				NEWLINE (bb->addr, indent);
-				PRINTF ("return;");
+				PRINTF ("return %s;", R0);
 				RAnalBlock *nbb = r_anal_bb_from_offset (core->anal, bb->fail);
 				if (r_list_contains (visited, nbb)) {
 					nbb = r_anal_bb_from_offset (core->anal, bb->jump);
@@ -377,13 +391,13 @@ R_API int r_core_pseudo_code(RCore *core, const char *input) {
 			if (sdb_num_get (db, K_ELSE (bb->addr), 0)) {
 				NEWLINE (addr, indent);
 				if (!strcmp (blocktype, "else")) {
-					PRINTF ("} %s {", blocktype);
+					PRINTF (" // } %s {", blocktype);
 				} else {
-					PRINTF ("} %s (?);", blocktype);
+					PRINTF (" // } %s (?);", blocktype);
 				}
 			} else {
 				NEWLINE (addr, indent);
-				PRINTF ("}");
+				PRINTF (" // }");
 			}
 			if (addr != bb->addr) {
 				queuegoto = addr;
@@ -423,7 +437,7 @@ R_API int r_core_pseudo_code(RCore *core, const char *input) {
 					if (!sdb_get (db, K_INDENT (fail), 0)) {
 						bb = r_anal_bb_from_offset (core->anal, fail);
 					} else {
-						eprintf ("FAIL%c", 10);
+						eprintf (" // FAIL%c", 10);
 					}
 				} else {
 					bb = r_anal_bb_from_offset (core->anal, jump);
@@ -443,7 +457,6 @@ R_API int r_core_pseudo_code(RCore *core, const char *input) {
 							sdb_num_set (db, K_INDENT (fail), indent, 0);
 							sdb_num_set (db, K_ELSE (fail), 1, 0);
 							NEWLINE (bb->addr, indent);
-							PRINTF ("{");
 						}
 					} else {
 						sdb_array_push_num (db, "indent", jump, 0);
@@ -455,7 +468,7 @@ R_API int r_core_pseudo_code(RCore *core, const char *input) {
 							blocktype = "else";
 						}
 						NEWLINE (bb->addr, indent);
-						PRINTF ("do {");
+						PRINTF (" // do {");
 						indent++;
 					}
 				}
@@ -463,7 +476,7 @@ R_API int r_core_pseudo_code(RCore *core, const char *input) {
 				ut64 addr = sdb_array_pop_num (db, "indent", NULL);
 				if (addr == UT64_MAX) {
 					NEWLINE (bb->addr, indent);
-					PRINTF ("(break)");
+					PRINTF (" // (break)");
 					break;
 				}
 				bb = r_anal_bb_from_offset (core->anal, addr);
@@ -477,7 +490,7 @@ R_API int r_core_pseudo_code(RCore *core, const char *input) {
 				}
 				if (nindent != indent) {
 					NEWLINE (bb->addr, indent);
-					PRINTF ("} else {");
+					PRINTF (" // } else {");
 				}
 				indent = nindent;
 			}
@@ -490,6 +503,7 @@ R_API int r_core_pseudo_code(RCore *core, const char *input) {
 		if (!r_list_contains (visited, bb)) {
 			orphan ++;
 			char *s = r_core_cmd_strf (core, "pdb@0x%08"PFMT64x"@e:asm.offset=0", bb->addr);
+			s = r_str_replace (s, ";", "//", true);
 			char *os = r_str_prefix_all (s, indentstr);
 			free (s);
 			s = os;
@@ -503,7 +517,7 @@ R_API int r_core_pseudo_code(RCore *core, const char *input) {
 				pj_end (pj);
 			}
 			NEWLINE (bb->addr, 1);
-			PRINTF ("orphan_0x%08"PFMT64x":\n%s", bb->addr, s);
+			PRINTF ("loc_0x%08"PFMT64x": // orphan\n%s", bb->addr, s);
 			free (s);
 		}
 	}

@@ -336,8 +336,8 @@ static const char *help_msg_pd[] = {
 	"pdl", "", "show instruction sizes",
 	"pdp", "", "disassemble by following pointers to read ropchains",
 	"pdr", "", "recursive disassemble across the function graph",
-	"pdR", "", "recursive disassemble block size bytes without analyzing functions",
 	"pdr.", "", "recursive disassemble across the function graph (from current basic block)",
+	"pdR", "", "recursive disassemble block size bytes without analyzing functions",
 	"pds", "[?]", "disassemble summary (strings, calls, jumps, refs) (see pdsf and pdfs)",
 	"pd,", " [n] [query]", "disassemble N instructions in a table (see dtd for debug traces)",
 	"pdx", " [hex]", "alias for pad or pix",
@@ -4253,6 +4253,7 @@ static void pr_bb(RCore *core, RAnalFunction *fcn, RAnalBlock *b, bool emu, ut64
 		core->anal->stackptr = b->parent_stackptr;
 	}
 	r_config_set_i (core->config, "asm.bbmiddle", false);
+	r_cons_printf ("| loc_0x%08"PFMT64x":", b->addr);
 	p_type == 'D'
 	? r_core_cmdf (core, "pD %"PFMT64u" @0x%"PFMT64x, b->size, b->addr)
 	: r_core_cmdf (core, "pI %"PFMT64u" @0x%"PFMT64x, b->size, b->addr);
@@ -4271,7 +4272,7 @@ static void pr_bb(RCore *core, RAnalFunction *fcn, RAnalBlock *b, bool emu, ut64
 			}
 		}
 		if (p_type == 'D' && show_flags) {
-			r_cons_printf ("| ----------- true: 0x%08"PFMT64x, b->jump);
+			r_cons_printf ("| // true: 0x%08"PFMT64x, b->jump);
 		}
 	}
 	if (b->fail != UT64_MAX) {
