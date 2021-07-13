@@ -1683,7 +1683,7 @@ static ut32 tmp_get_realsize (RAnalFunction *f) {
 }
 
 static void ds_show_functions_argvar(RDisasmState *ds, RAnalFunction *fcn, RAnalVar *var, const char *base, bool is_var, char sign) {
-	int delta = var->kind == 'b' ? R_ABS (var->delta + fcn->bp_off) : R_ABS (var->delta);
+	int delta = var->kind == 'b' ? R_ABS (var->delta + fcn->bp_off) : R_ABS (var->delta - ((var->kind=='s')?8:0));
 	const char *pfx = is_var ? "var" : "arg";
 	char *constr = r_anal_var_get_constraints_readable (var);
 	r_cons_printf ("%s%s %s%s%s%s %s%s%s%s@ %s%c0x%x", COLOR_ARG (ds, color_func_var), pfx,

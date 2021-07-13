@@ -326,3 +326,33 @@ afvW
     var_4h  0x27
 EOF
 RUN
+
+NAME=Labe07 stack vars
+FILE=bins/pe/Lab07_01.exe
+CMDS=<<EOF
+aa
+s..000
+pdf
+EOF
+EXPECT=<<EOF
+            ; CALL XREF from entry0 @ 0x40123f
+            ;-- section..text:
+/ 59: fcn.00401000 ();
+|           ; var int32_t var_8h @ esp+0x8
+|           ; var int32_t var_ch @ esp+0xc
+|           ; var int32_t var_10h @ esp+0x10
+|           0x00401000      83ec10         sub esp, 0x10               ; [00] -r-x section size 12288 named .text
+|           0x00401003      8d442400       lea eax, [esp]
+|           0x00401007      c74424003050.  mov dword [esp], str.MalService ; [0x405030:4]=0x536c614d ; "MalService"
+|           0x0040100f      50             push eax
+|           0x00401010      c74424084010.  mov dword [var_8h], fcn.00401040 ; [0x401040:4]=0x400ec81
+|           0x00401018      c744240c0000.  mov dword [var_ch], 0
+|           0x00401020      c74424100000.  mov dword [var_10h], 0
+|           0x00401028      ff1504404000   call dword [sym.imp.ADVAPI32.dll_StartServiceCtrlDispatcherA] ; 0x404004 ; "&F" ; BOOL StartServiceCtrlDispatcherA(const SERVICE_TABLE_ENTRYA *lpServiceStartTable)
+|           0x0040102e      6a00           push 0
+|           0x00401030      6a00           push 0
+|           0x00401032      e809000000     call fcn.00401040
+|           0x00401037      83c418         add esp, 0x18
+\           0x0040103a      c3             ret
+EOF
+RUN
