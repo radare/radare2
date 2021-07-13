@@ -271,6 +271,7 @@ extern RAsmPlugin r_asm_plugin_xap;
 extern RAsmPlugin r_asm_plugin_xcore_cs;
 extern RAsmPlugin r_asm_plugin_xtensa;
 extern RAsmPlugin r_asm_plugin_z80;
+extern RAsmPlugin r_asm_plugin_arm_v35;
 extern RAsmPlugin r_asm_plugin_pyc;
 
 #endif

@@ -17,6 +17,7 @@ include $(STOP)/capstone.mk
 
 alle:
 	$(MAKE) gperfs
+	$(MAKE) -C arch/arm/v35arm64
 	$(MAKE) plugins
 
 SDB_PATH=../../../shlr/sdb

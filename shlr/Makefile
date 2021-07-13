@@ -255,7 +255,6 @@ else
 	"$(SHELL)" capstone.sh "${CS_URL}" "${CS_BRA}" "${CS_TIP}" "${CS_REV}" "${CS_ARCHIVE_URL}"
 endif
 
-
 .PHONY: capstone capstone-sync
 endif
 
