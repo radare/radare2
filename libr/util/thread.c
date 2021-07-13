@@ -134,7 +134,8 @@ R_API bool r_th_setaffinity(RThread *th, int cpuid) {
 	CPU_ZERO(&c);
 	CPU_SET(cpuid, &c);
 
-	if (sched_setaffinity (th->tid, sizeof (c), &c) != 0) {
+	pid_t tid =  __pthread_gettid (th->tid);
+	if (sched_setaffinity (tid, sizeof (c), &c) != 0) {
 		eprintf ("Failed to set cpu affinity\n");
 		return false;
 	}
