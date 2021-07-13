@@ -17,9 +17,14 @@
 
 #define r_io_map_begin(map) r_itv_begin (map->itv)
 #define r_io_map_to(map) ( r_itv_end (map->itv) - 1 )
+#define r_io_map_from r_io_map_begin
+#define r_io_submap_from(sm) (r_io_map_begin (sm))
+#define r_io_submap_to(sm) (r_io_map_to (sm))
 #define r_io_map_end(map) r_itv_end (map->itv)
 #define r_io_map_size(map) r_itv_size (map->itv)
 #define r_io_map_contain(map, addr) r_itv_contain (map->itv, addr)
+#define r_io_submap_contain(sm, addr) r_io_map_contain (sm, addr)
+#define	r_io_submap_overlap(bd, sm) r_itv_overlap(bd->itv, sm->itv)
 
 #define r_io_map_set_begin(map, new_addr)	\
 	do {					\
@@ -100,6 +105,7 @@ typedef struct r_io_undo_w_t {
 typedef struct r_io_t {
 	struct r_io_desc_t *desc; // XXX deprecate... we should use only the fd integer, not hold a weak pointer
 	ut64 off;
+	ut32 bank;	// current bank
 	int bits;
 	int va;	// keep it as int, value can be 0, 1 or 2
 	bool ff;
@@ -114,6 +120,7 @@ typedef struct r_io_t {
 	RPVector maps; //from tail backwards maps with higher priority are found
 	RSkyline map_skyline; // map parts that are not covered by others
 	RIDStorage *files;
+	RIDStorage *banks;
 	RCache *buffer;
 	RPVector cache;
 	RSkyline cache_skyline;
@@ -193,10 +200,28 @@ typedef struct r_io_map_t {
 	int fd;
 	int perm;
 	ut32 id;
+	ut64 ts;
 	RInterval itv;
 	ut64 delta; // paddr = vaddr - itv.addr + delta
 	char *name;
 } RIOMap;
+
+typedef struct r_io_map_ref_t {
+	ut32 id;
+	ut64 ts;
+} RIOMapRef;
+
+typedef struct r_io_submap_t {
+	RIOMapRef mapref;
+	RInterval itv;
+} RIOSubMap;
+
+typedef struct r_io_bank_t {
+	RContRBTree *submaps;
+	RList *maprefs;	// references to maps, avoid double-free and dups
+	RQueue *todo;	// needed for operating on submap tree
+	ut32 id;	// for fast selection with RIDStorage
+} RIOBank;
 
 typedef struct r_io_cache_t {
 	RInterval itv;
@@ -298,6 +323,7 @@ R_API RIOMap *r_io_map_add(RIO *io, int fd, int flags, ut64 delta, ut64 addr, ut
 // same as r_io_map_add but used when many maps need to be added. Call r_io_update when all maps have been added.
 R_API RIOMap *r_io_map_add_batch(RIO *io, int fd, int flags, ut64 delta, ut64 addr, ut64 size);
 R_API RIOMap *r_io_map_get_at(RIO *io, ut64 addr);		//returns the map at vaddr with the highest priority
+R_API RIOMap *r_io_map_get_by_ref(RIO *io, RIOMapRef *ref);
 // update the internal state of RIO after a series of _batch operations
 R_API void r_io_update(RIO *io);
 R_API bool r_io_map_is_mapped(RIO* io, ut64 addr);
@@ -324,6 +350,24 @@ R_API ut64 r_io_map_next_address(RIO* io, ut64 addr);
 
 R_API ut64 r_io_p2v(RIO *io, ut64 pa);
 R_API ut64 r_io_v2p(RIO *io, ut64 va);
+
+//io_submap.c
+R_API RIOSubMap *r_io_submap_new(RIO *io, RIOMapRef *mapref);
+R_API bool r_io_submap_set_from(RIOSubMap *sm, const ut64 from);
+R_API bool r_io_submap_set_to(RIOSubMap *sm, const ut64 to);
+
+//io_bank.c
+R_API RIOBank *r_io_bank_new(void);
+R_API void r_io_bank_free(RIOBank *bank);
+R_API void r_io_bank_init(RIO *io);
+R_API void r_io_bank_fini(RIO *io);
+R_API RIOBank *r_io_bank_get(RIO *io, const ut32 bankid);
+R_API bool r_io_bank_map_add_top(RIO *io, const ut32 bankid, const ut32 mapid);
+R_API bool r_io_bank_map_priorize (RIO *io, const ut32 bankid, const ut32 mapid);
+R_API bool r_io_bank_locate(RIO *io, const ut32 bankid, const ut64 size, ut64 *addr);
+R_API bool r_io_bank_read_at(RIO *io, const ut32 bankid, ut64 addr, ut8 *buf, int len);
+R_API bool r_io_bank_write_at(RIO *io, const ut32 bankid, ut64 addr, ut8 *buf, int len);
+R_API void r_io_bank_drain(RIO *io, const ut32 bankid);
 
 //io.c
 R_API RIO *r_io_new(void);
